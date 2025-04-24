@@ -1,16 +1,20 @@
-from typing import Sequence
+from litestar import get, post, Controller, patch, delete 
 #from dataclasses import dataclass
 #from litestar import put, delete, patch, Router
-from litestar import get, post, Controller, patch
 
+from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
+from advanced_alchemy.exceptions import NotFoundError
+from advanced_alchemy.filters import ComparisonFilter, CollectionFilter
+
+from typing import Sequence
 
 from app.models import TodoItem 
 from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO
+from app.repositories import TodoItemRepository, provide_todoitem_repo
 
 '''
 Bases:
@@ -28,13 +32,15 @@ En la función post usamos dto para entrada de datos y en la función get usamos
 class TodoController(Controller):
     path = '/items'
     return_dto=TodoItemReadDTO
-
+    dependencies = {
+        "todoitem_repo": Provide(provide_todoitem_repo)
+    }
     @get("/")
-    async def list_items(self, db_session: Session, done: bool | None = None) -> Sequence[TodoItem]:
-        stmt = select(TodoItem)
-        if done is not None:
-            stmt = stmt.filter(TodoItem.done == done)
-        return db_session.execute(stmt).scalars().all()
+    async def list_items(self, todoitem_repo: TodoItemRepository, done: bool | None = None) -> Sequence[TodoItem]:
+        #return todoitem_repo.list(CollectionFilter("done", [done]))
+        if done is None:
+            return todoitem_repo.list()
+        return todoitem_repo.list(ComparisonFilter("done", "eq", done))
 
     @post("/", dto=TodoItemCreateDTO)
     async def add_todo(self, db_session: Session, data: TodoItem) -> Sequence[TodoItem]:
@@ -43,14 +49,10 @@ class TodoController(Controller):
         return db_session.execute(select(TodoItem)).scalars().all()
     
     @get("/{item_id:int}")
-    async def get_item(self, item_id: int, db_session: Session) -> TodoItem:
-
+    async def get_item(self, item_id: int, todoitem_repo: TodoItemRepository) -> TodoItem:
         try:
-            stmt = select(TodoItem).where(TodoItem.id == item_id)
-
-            return db_session.execute(stmt).scalar_one()
-        
-        except NoResultFound:
+            return todoitem_repo.get(item_id)
+        except NotFoundError:
             raise HTTPException(status_code=404, detail=f"El item con id={item_id} no existe.")
     
     @patch("/{item_id:int}", dto=TodoItemUpdateDTO)
@@ -64,6 +66,9 @@ class TodoController(Controller):
 
         return item
 
+    @delete("/{item_id:int}")
+    async def delete_item(self, item_id: int, todoitem_repo: TodoItemRepository) -> None:
+        todoitem_repo.delete(item_id)
 '''
     @put("/{item_id:int}")
     async def update_item(self, item_id: int, data: TodoItem) -> list[TodoItem]:
