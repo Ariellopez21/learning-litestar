@@ -1,9 +1,11 @@
 # Litestar es la base con la que se levanta la aplicacion
 from http.client import HTTPException
 from typing import Sequence
-from dataclasses import dataclass
-from litestar import Litestar, get, post, put, delete, patch, Controller, Router
-from litestar.exceptions import HTTPException
+#from dataclasses import dataclass
+#from litestar import put, delete, patch, Router
+from litestar import Litestar, get, post, Controller
+
+#from litestar.exceptions import HTTPException
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from litestar.plugins.sqlalchemy import SQLAlchemySyncConfig, SQLAlchemyPlugin
 from sqlalchemy import select, String
