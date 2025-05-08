@@ -1,5 +1,5 @@
 from advanced_alchemy.repository import SQLAlchemySyncRepository
-from app.models import TodoItem
+from app.models import TodoItem, User
 from sqlalchemy.orm import Session
 
 '''
@@ -18,3 +18,9 @@ async def provide_todoitem_repo(db_session: Session) -> TodoItemRepository:
     Provide a SQLAlchemySyncRepository for TodoItem.
     """
     return TodoItemRepository(session=db_session)
+
+class UserRepository(SQLAlchemySyncRepository[User]):
+    model_type = User
+
+async def provide_user_repo(db_session: Session) -> UserRepository:
+    return UserRepository(session=db_session)
