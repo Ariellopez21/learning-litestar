@@ -13,9 +13,9 @@ from advanced_alchemy.filters import ComparisonFilter, CollectionFilter
 
 from typing import Sequence
 
-from app.models import TodoItem, User
-from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO, UserReadDTO, UserReadFullDTO, TodoItemReadFullDTO
-from app.repositories import TodoItemRepository, provide_todoitem_repo, UserRepository, provide_user_repo
+from app.models import TodoItem, User, Tag
+from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO, UserReadDTO, UserReadFullDTO, TodoItemReadFullDTO, TagReadDTO, UserCreateDTO
+from app.repositories import TodoItemRepository, provide_todoitem_repo, UserRepository, provide_user_repo, TagRepository, provide_tag_repo
 
 '''
 Bases:
@@ -43,9 +43,9 @@ class TodoController(Controller):
         if done is None:
             return todoitem_repo.list()
         return todoitem_repo.list(ComparisonFilter("done", "eq", done))
-    @post("/", dto=TodoItemCreateDTO)
-    async def add_todo(self, todoitem_repo: TodoItemRepository, data: TodoItem) -> TodoItem:
-        return todoitem_repo.add(data, auto_commit=True)
+    @post("/", dto=TodoItemCreateDTO, dependencies={"tags_repo": Provide(provide_tag_repo)})
+    async def add_todo(self, todoitem_repo: TodoItemRepository, tags_repo: TagRepository, data: TodoItem) -> TodoItem:
+        return todoitem_repo.add_with_tags(data, tags_repo, auto_commit=True)
        
     @get("/{item_id:int}")
     async def get_item(self, item_id: int, todoitem_repo: TodoItemRepository) -> TodoItem:
@@ -93,3 +93,33 @@ class UserController(Controller):
             return user_repo.get(user_id)
         except NotFoundError:
             raise HTTPException(status_code=404, detail=f"El user con id={user_id} no existe.")
+    @post("/", dto=UserCreateDTO)
+    async def add_user(self, user_repo: UserRepository, data: User) -> User:
+        return user_repo.add_with_password_hash(data, auto_commit=True)
+class TagController(Controller):
+    path = '/tags'
+    tags = ["tags"]
+    return_dto = TagReadDTO
+    dependencies = {
+        "tag_repo": Provide(provide_tag_repo)
+    }
+    @get("/")
+    async def list_tags(self, tag_repo: TagRepository) -> Sequence[Tag]:
+        return tag_repo.list()
+    @get("/{tag_id:int}")
+    async def get_tag(self, tag_repo: TagRepository, tag_id: int) -> Tag:
+        try:
+            return tag_repo.get(tag_id)
+        except NotFoundError:
+            raise HTTPException(status_code=404, detail=f"El tag con id={tag_id} no existe.")
+        
+
+class AuthController(Controller):
+    path = "/auth"
+    tags = ["auth"]
+
+    @post("/login", dependencies={"user_repo": Provide(provide_user_repo)})
+    async def login(self, username: str, password: str, user_repo: UserRepository) -> dict:
+        password_valid = user_repo.check_password(username,password)
+
+        return {"valid": password_valid}

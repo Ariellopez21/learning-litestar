@@ -1,7 +1,10 @@
+from turtle import title
 from litestar import Litestar
+from litestar.openapi import OpenAPIConfig
+from litestar.openapi.plugins import SwaggerRenderPlugin, ScalarRenderPlugin
 from litestar.plugins.sqlalchemy import SQLAlchemySyncConfig, SQLAlchemyPlugin
 
-from app.controllers import TodoController, UserController
+from app.controllers import TagController, TodoController, UserController, TagController, AuthController
 from app.models import Base
 
 # TOdo lo que solicitemos, estará incluido en la URL como cuando buscas algo en google y miras la URL.
@@ -14,8 +17,14 @@ db_config = SQLAlchemySyncConfig(
 
 sqla_plugin = SQLAlchemyPlugin(config=db_config)
 
+openapi_config = OpenAPIConfig(
+    title="Todo API",
+    version="0.9.9",
+    render_plugins=[SwaggerRenderPlugin(),ScalarRenderPlugin()])
+
 # Una lista de funciones para recibir información de la API
 app = Litestar(
-    route_handlers=[TodoController, UserController], 
+    route_handlers=[TodoController, UserController, TagController, AuthController], 
+    openapi_config=openapi_config,
     plugins=[sqla_plugin],
     debug=True)

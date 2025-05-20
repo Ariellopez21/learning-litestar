@@ -1,7 +1,7 @@
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
 
-from app.models import TodoItem, User
+from app.models import TodoItem, User, Tag
 
 '''
 DataTransferObjects (DTOs): Son clases que se utilizan para definir la estructura de los datos que se envían y reciben en las peticiones HTTP.
@@ -26,4 +26,10 @@ class UserReadDTO(SQLAlchemyDTO[User]):
     config = SQLAlchemyDTOConfig(exclude={"items"})
 
 class UserReadFullDTO(SQLAlchemyDTO[User]):
+    config = SQLAlchemyDTOConfig(exclude={"items", "id"})
+
+class UserCreateDTO(SQLAlchemyDTO[User]):
+    config = SQLAlchemyDTOConfig(exclude={"items", "id"})
+
+class TagReadDTO(SQLAlchemyDTO[Tag]):
     pass

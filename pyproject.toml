@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "litestar[sqlalchemy,standard]>=2.15.2",
+    "pwdlib[argon2]>=0.2.1",
 ]
