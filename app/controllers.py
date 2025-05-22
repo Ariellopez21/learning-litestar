@@ -1,21 +1,26 @@
 from enum import auto
-from litestar import get, post, Controller, patch, delete 
+from litestar import get, post, Controller, patch, delete, Response
 #from dataclasses import dataclass
 #from litestar import put, delete, patch, Router
 
 from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
+from litestar.params import Body
+from litestar.enums import RequestEncodingType
+from litestar.contrib.jwt import OAuth2Login
+
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.filters import ComparisonFilter, CollectionFilter
 
-from typing import Sequence
+from typing import Sequence, Annotated
 
 from app.models import TodoItem, User, Tag
 from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO, UserReadDTO, UserReadFullDTO, TodoItemReadFullDTO, TagReadDTO, UserCreateDTO
 from app.repositories import TodoItemRepository, provide_todoitem_repo, UserRepository, provide_user_repo, TagRepository, provide_tag_repo
+from app.security import oauth2_auth
 
 '''
 Bases:
@@ -118,8 +123,6 @@ class AuthController(Controller):
     path = "/auth"
     tags = ["auth"]
 
-    @post("/login", dependencies={"user_repo": Provide(provide_user_repo)})
-    async def login(self, username: str, password: str, user_repo: UserRepository) -> dict:
-        password_valid = user_repo.check_password(username,password)
-
-        return {"valid": password_valid}
+    @post("/login")
+    async def login(self, data: Annotated[User, Body(media_type=RequestEncodingType.URL_ENCODED)]) -> Response[OAuth2Login]:
+        return oauth2_auth.login(identifier="test",)
