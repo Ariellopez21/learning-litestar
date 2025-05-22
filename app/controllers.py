@@ -1,5 +1,5 @@
 from enum import auto
-from litestar import get, post, Controller, patch, delete, Response
+from litestar import get, post, Controller, patch, delete, Response, Request
 #from dataclasses import dataclass
 #from litestar import put, delete, patch, Router
 
@@ -8,17 +8,17 @@ from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 from litestar.params import Body
 from litestar.enums import RequestEncodingType
-from litestar.contrib.jwt import OAuth2Login
+from litestar.contrib.jwt import OAuth2Login, Token
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.filters import ComparisonFilter, CollectionFilter
 
-from typing import Sequence, Annotated
+from typing import Sequence, Annotated, Any
 
 from app.models import TodoItem, User, Tag
-from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO, UserReadDTO, UserReadFullDTO, TodoItemReadFullDTO, TagReadDTO, UserCreateDTO
+from app.dtos import TodoItemReadDTO, TodoItemCreateDTO, TodoItemUpdateDTO, UserReadDTO, UserReadFullDTO, TodoItemReadFullDTO, TagReadDTO, UserCreateDTO, UserLoginDTO
 from app.repositories import TodoItemRepository, provide_todoitem_repo, UserRepository, provide_user_repo, TagRepository, provide_tag_repo
 from app.security import oauth2_auth
 
@@ -98,6 +98,11 @@ class UserController(Controller):
             return user_repo.get(user_id)
         except NotFoundError:
             raise HTTPException(status_code=404, detail=f"El user con id={user_id} no existe.")
+        
+    @get("/me")
+    async def get_my_user(self, request: "Request[User, Token, Any]") -> User:
+        return request.user
+
     @post("/", dto=UserCreateDTO)
     async def add_user(self, user_repo: UserRepository, data: User) -> User:
         return user_repo.add_with_password_hash(data, auto_commit=True)
@@ -123,6 +128,19 @@ class AuthController(Controller):
     path = "/auth"
     tags = ["auth"]
 
-    @post("/login")
-    async def login(self, data: Annotated[User, Body(media_type=RequestEncodingType.URL_ENCODED)]) -> Response[OAuth2Login]:
-        return oauth2_auth.login(identifier="test",)
+    @post("/login", dto=UserLoginDTO,
+          dependencies={"users_repo": Provide(provide_user_repo)})
+    async def login(self, 
+                    data: Annotated[User, Body(media_type=RequestEncodingType.URL_ENCODED)],
+                    users_repo: UserRepository,
+                    ) -> Response[OAuth2Login]:
+        
+        #raise Exception("Algo salió muy mal x.x")
+
+        user = users_repo.get_one_or_none(username=data.username)
+
+        if user is None or not users_repo.check_password(data.username, data.password):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+
+        return oauth2_auth.login(identifier=user.username)
