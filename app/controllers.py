@@ -1,4 +1,3 @@
-from enum import auto
 from litestar import get, post, Controller, patch, delete, Response, Request
 #from dataclasses import dataclass
 #from litestar import put, delete, patch, Router
@@ -10,10 +9,8 @@ from litestar.params import Body
 from litestar.enums import RequestEncodingType
 from litestar.contrib.jwt import OAuth2Login, Token
 
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 from advanced_alchemy.exceptions import NotFoundError
-from advanced_alchemy.filters import ComparisonFilter, CollectionFilter
+from advanced_alchemy.filters import ComparisonFilter 
 
 from typing import Sequence, Annotated, Any
 
